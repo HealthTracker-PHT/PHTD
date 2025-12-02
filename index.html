@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vital Signs Realtime Dashboard (Sliding UI)</title>
+    <!-- Load Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Chart.js for visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Load jQuery for sliding logic -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            overflow: hidden; /* ป้องกันการเลื่อนหน้าจอหลัก */
+        }
+        /* Custom Variables and Styling for Sliding UI */
+        :root {
+            --primary-color: #4f46e5;
+            --primary-color700: #4338ca;
+            --secondary-color100: #eef2ff;
+            --black: #1f2937;
+            --white: #ffffff;
+        }
+
+        /* ------------------ CORRECTED Sliding Container Setup ------------------ */
+        .cover3man {
+            /* cover3man acts as the viewport for the sliding div */
+            width: 100vw; 
+            height: calc(100vh - 7vh); /* 100vh - height of fixed bottom menu */
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .div-mainpage333 {
+            /* div-mainpage333 contains all 3 pages and slides horizontally */
+            display: flex;
+            width: 300vw;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0; 
+            transition: transform 0.3s ease-in-out; /* Added transition for smooth sliding */
+        }
+
+        /* Each page container */
+        .coveruserpage, .coverhomebooking, .covertotalbooking {
+            width: 100vw;
+            height: 100%;
+            flex-shrink: 0;
+            overflow: hidden; 
+        }
+
+        /* Sliding classes: Define the translation necessary to bring the target page into view */
+        .left1 { transform: translateX(0); }         /* Page 1 (User) is visible */
+        .center00 { transform: translateX(-100vw); } /* Page 2 (Metrics) is visible */
+        .right2 { transform: translateX(-200vw); }    /* Page 3 (History) is visible */
+
+        /* ------------------ Fixed Menu Setup ------------------ */
+        .covermenubot {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 100%;
+            background-color: var(--white);
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .sub-botmenu {
+            cursor: pointer;
+            width: 33.33%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            position: relative;
+        }
+        .icon-size { width: 24px; height: 24px; } 
+
+        /* Page Content Scrollable Area */
+        .page-content-scroll {
+            height: 100%; /* Take full height of its container */
+            overflow-y: auto; /* Enable vertical scrolling */
+            padding-bottom: 1rem; /* Prevent content hiding behind the menu */
+            background-color: #f3f4f6; /* bg-gray-100 */
+        }
+        
+        /* Chart specific style */
+        .chart-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: none; 
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+    
+    <!-- Modal and Overlay placeholders (Kept for compatibility with user's original HTML structure) -->
+    <div id="successfullyreserved" class="modal_alertsuccessfullyreserved overlay-slidedown_alertsuccessfullyreserved"></div>
+    <div class="overlayto_discriptionroom overlay-slidedown_overlayto_discriptionroom"></div>
+
+    <!-- main 3 pages container -->
+    <!-- cover3man is the viewport -->
+    <div class="cover3man">
+        <!-- div-mainpage333 is the sliding content holder, starts in the center00 position -->
+        <div id="mainpage333" class="div-mainpage333 center00">
+            
+            <!-- Page 1 (Left): User/Login/Connection Status -->
+            <div id="user-page" class="coveruserpage page-content-scroll">
+                <div class="p-4 sm:p-8">
+                    <h2 class="text-3xl font-bold text-indigo-700 mb-6 text-center">1. สถานะผู้ใช้/เชื่อมต่อ</h2>
+
+                    <!-- User Info Section -->
+                    <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center mb-8">
+                        <div class="h-20 w-20 rounded-full overflow-hidden border-4 border-indigo-400">
+                            <!-- Placeholder for User Image -->
+                            <svg class="icon-size h-full w-full p-2 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            </svg>
+                        </div>
+                        <div class="text-xl font-bold text-gray-800 mt-3">
+                            Device ID: <span id="uid-display" class="font-bold">device01</span>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-1">
+                            เชื่อมต่อในฐานะผู้ใช้งาน
+                        </div>
+                        <button class="w-full max-w-xs h-10 mt-8 bg-red-500 hover:bg-red-600 text-white font-bold rounded-full transition duration-150">
+                            ออกจากระบบ (Logout)
+                        </button>
+                    </div>
+
+                    <!-- Connection Status (From original dashboard) -->
+                    <h3 class="text-xl font-bold text-indigo-700 mb-4 pt-4 border-t border-gray-200">สถานะการเชื่อมต่อ</h3>
+                    <div id="auth-status" class="bg-green-50 p-4 rounded-xl shadow-inner text-center">
+                        <p class="text-sm font-medium text-green-700">
+                            ✅ สถานะ: เชื่อมต่อโดยตรงกับ Device ID: <span class="font-bold">device01</span>
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            Target Path: <span id="path-display" class="font-mono">users/device01/records</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Page 2 (Center/Home): Current Measurements/Metrics -->
+            <div id="metrics-page" class="coverhomebooking page-content-scroll">
+                 <div class="p-4 sm:p-8">
+                    <h2 class="text-3xl font-extrabold text-red-700 mb-6 text-center">2. การวัดผลปัจจุบัน (Metrics)</h2>
+                    
+                    <!-- Latest Reading Status Bar -->
+                    <div id="latest-reading" class="text-center mb-6 p-4 bg-yellow-50 rounded-lg shadow-md">
+                        <p class="text-xl font-medium text-gray-500">กำลังรอรับข้อมูลจาก Firestore...</p>
+                    </div>
+
+                    <!-- Gauge/Metric Cards for Latest Readings -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div id="metric-hr" class="bg-red-50 p-6 rounded-xl shadow-lg border-l-4 border-red-500">
+                            <p class="text-sm font-medium text-red-700">Heart Rate (bpm)</p>
+                            <p id="current-hr" class="text-5xl font-extrabold text-red-600 mt-1">--</p>
+                            <p id="hr-status" class="text-sm text-red-400 mt-2">N/A</p>
+                        </div>
+                        <div id="metric-spo2" class="bg-blue-50 p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
+                            <p class="text-sm font-medium text-blue-700">SpO₂ (%)</p>
+                            <p id="current-spo2" class="text-5xl font-extrabold text-blue-600 mt-1">--</p>
+                            <p id="spo2-status" class="text-sm text-blue-400 mt-2">N/A</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Page 3 (Right): Data History and Graph -->
+            <div id="history-page" class="covertotalbooking page-content-scroll">
+                <div class="p-4 sm:p-8">
+                    <h2 class="text-3xl font-bold text-blue-700 mb-6 text-center">3. ประวัติข้อมูลและกราฟ (History)</h2>
+
+                    <!-- Summary Table Container -->
+                    <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">📚 Recent Data History (Max 10)</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th class="px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เวลา (Time)</th>
+                                        <th class="px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Heart Rate (bpm)</th>
+                                        <th class="px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SpO₂ (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="data-table-body" class="bg-white divide-y divide-gray-200">
+                                    <tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">รอรับข้อมูล...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Chart Display Area -->
+                    <div class="chart-container">
+                        <canvas id="chart" width="900" height="400"></canvas>
+                    </div>
+                    <p id="error-message" class="text-red-500 mt-4 text-center"></p>
+                </div>
+            </div>
+        </div>
+        <!-- End of main 3 pages container -->
+    </div>
+    
+    <!-- เมนูล่าง (Fixed Bottom Menu) -->
+    <div style="position: fixed; bottom: 0; width: 100%; z-index: 10; height: 7vh;">
+        <div id="menubottommain" class="covermenubot">
+            <!-- Menu 1: User/Login -->
+            <div onclick="testbto(1)" class="sub-botmenu">
+                <svg id="user-icon" class="icon-size text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+            </div>
+            <!-- Menu 2: Home/Metrics (Center Icon) -->
+            <div onclick="testbto(2)" class="sub-botmenu position-bot">
+                <div id="center-icon-wrapper" class="h-14 w-14 rounded-full bg-indigo-600 flex items-center justify-center -mt-4 shadow-lg cursor-pointer">
+                    <svg class="icon-size h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                </div>
+            </div>
+            <!-- Menu 3: History/Graph -->
+            <div onclick="testbto(3)" class="sub-botmenu"> 
+                <svg id="history-icon" class="icon-size text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 3h-2V1h-2v2H9V1H7v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zm-5-8H9c-.55 0-1 .45-1 1s.45 1 1 1h5c.55 0 1-.45 1-1s-.45-1-1-1z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // --- Navigation Logic ---
+        const mainpage = $('#mainpage333');
+        const userIcon = $('#user-icon');
+        const historyIcon = $('#history-icon');
+
+        function testbto(id) {
+            
+            // --- Reset all icons to inactive state ---
+            userIcon.removeClass('text-indigo-600').addClass('text-gray-400');
+            historyIcon.removeClass('text-indigo-600').addClass('text-gray-400');
+            $('#center-icon-wrapper').addClass('bg-indigo-600').removeClass('bg-red-500'); 
+
+            // Apply the correct translation based on the target page
+            if (id === 1) {
+                // Page 1: User (transform: translateX(0) - no shift)
+                mainpage.removeClass('center00 right2').addClass('left1');
+                userIcon.removeClass('text-gray-400').addClass('text-indigo-600'); // User icon active
+            } else if (id === 2) {
+                // Page 2: Metrics (transform: translateX(-100vw) - shift left by 100vw)
+                mainpage.removeClass('left1 right2').addClass('center00');
+                $('#center-icon-wrapper').removeClass('bg-indigo-600').addClass('bg-red-500'); // Center icon active
+            } else if (id === 3) {
+                // Page 3: History (transform: translateX(-200vw) - shift left by 200vw)
+                mainpage.removeClass('left1 center00').addClass('right2');
+                historyIcon.removeClass('text-gray-400').addClass('text-indigo-600'); // History icon active
+            }
+        }
+        
+        // Set initial view to the home/metrics page (ID 2)
+        $(document).ready(function() {
+            // Wait for jQuery to be ready, then set the initial state
+            testbto(2);
+        });
+        
+        // Helper function for modal (kept simple)
+        function showallmodalll(id) {
+             console.log(`Modal ID ${id} attempted to open.`);
+        }
+        function closeModal(id) {
+             console.log(`Modal ID ${id} attempted to close.`);
+        }
+        
+    </script>
+
+    <script type="module">
+        // -----------------------------------------------------------
+        // 1) GLOBAL VARIABLES AND INITIALIZATION (Fixed for Device01)
+        // -----------------------------------------------------------
+        const USER_ID = "device01";
+        const COLLECTION_PATH = `users/${USER_ID}/records`;
+
+        // IMPORTANT: In a real environment, __firebase_config and __app_id variables would be used.
+        // For this fixed example, we use mock configuration.
+        const firebaseConfig = {
+            apiKey: "AIzaSyDzTkR7xbg9B6UkknvRXiuamWsBR1zIQ90",
+            authDomain: "hrspo-98b0c.firebaseapp.com",
+            projectId: "hrspo-98b0c",
+            storageBucket: "hrspo-98b0c.firebasestorage.app",
+            messagingSenderId: "364239224326",
+            appId: "1:364239224326:web:1e66faddd8e6dd2e718d87",
+            measurementId: "G-2PYKXDEDEH"
+        };
+        
+        // --- DOM Elements ---
+        const errorMessage = document.getElementById('error-message');
+        const currentHr = document.getElementById('current-hr');
+        const hrStatus = document.getElementById('hr-status');
+        const currentSpo2 = document.getElementById('current-spo2');
+        const spo2Status = document.getElementById('spo2-status');
+        const latestReadingDiv = document.getElementById('latest-reading');
+        const tableBody = document.getElementById('data-table-body');
+
+        let db;
+        let chartRealtimeInstance;
+        let unsubscribeSnapshot = null; 
+
+        // -----------------------------
+        // 2) Firebase Imports (v9.6.11)
+        // -----------------------------
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js";
+        import {
+            getFirestore, 
+            collection, 
+            query, 
+            orderBy, 
+            onSnapshot, 
+            setLogLevel 
+        } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore.js";
+
+
+        // -----------------------------
+        // 3) Chart Setup and Rendering
+        // -----------------------------
+        function initializeChart(canvasId, type = 'line', title = 'กราฟข้อมูล') {
+            const ctx = document.getElementById(canvasId).getContext("2d");
+            if (chartRealtimeInstance) chartRealtimeInstance.destroy();
+
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    title: { display: true, text: title }
+                },
+                scales: {
+                    x: { 
+                        title: { display: true, text: "วัน/เวลา (Date/Time)", color: '#4B5563' },
+                        ticks: { maxTicksLimit: 10 }
+                    },
+                    y: { 
+                        beginAtZero: false,
+                        title: { display: true, text: "ค่า (Value)", color: '#4B5563' },
+                        min: 50, 
+                        max: 110 
+                    }
+                }
+            };
+
+            chartRealtimeInstance = new Chart(ctx, {
+                type: type,
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: "Heart Rate (bpm)",
+                            borderColor: "#EF4444", 
+                            tension: 0.3,
+                            data: [],
+                            fill: false,
+                            borderWidth: 3,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#EF4444'
+                        },
+                        {
+                            label: "SpO2 (%)",
+                            borderColor: "#3B82F6", 
+                            tension: 0.3,
+                            data: [],
+                            fill: false,
+                            borderWidth: 3,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#3B82F6'
+                        }
+                    ]
+                },
+                options: chartOptions
+            });
+            
+            return chartRealtimeInstance;
+        }
+
+
+        // -----------------------------
+        // 4) Main Data Listener (Firestore)
+        // -----------------------------
+        function displayError(message) {
+            errorMessage.textContent = `❌ ${message}`;
+            console.error(message);
+        }
+
+        function updateRealtimeChart(data) {
+            const labels = data.map(d => d.timeLabel);
+            const hrData = data.map(d => d.heartRate);
+            const spo2Data = data.map(d => d.spo2);
+
+            const historyLimit = 20;
+            
+            chartRealtimeInstance.data.labels = labels.slice(-historyLimit);
+            chartRealtimeInstance.data.datasets[0].data = hrData.slice(-historyLimit);
+            chartRealtimeInstance.data.datasets[1].data = spo2Data.slice(-historyLimit);
+            chartRealtimeInstance.options.plugins.title.text = '⏱️ เรียลไทม์ (20 จุดล่าสุด)';
+            chartRealtimeInstance.options.scales.y.title.text = 'ค่า (Value)';
+            chartRealtimeInstance.update();
+        }
+
+        function startDataListener() {
+            if (unsubscribeSnapshot) {
+                unsubscribeSnapshot(); // Stop previous listener
+            }
+            
+            const q = query(
+                collection(db, COLLECTION_PATH),
+                orderBy("timestamp", "asc") 
+            );
+
+            unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
+                const latestRawData = []; // Data for chart, current metrics & table
+
+                snapshot.docs.forEach(doc => {
+                    const data = doc.data();
+                    const timestamp = data.timestamp;
+                    let timeLabel;
+                    let dateObj;
+                    let validTimestamp = false;
+                    
+                    // --- Timestamp Parsing Logic ---
+                    if (timestamp && typeof timestamp.seconds === 'number') {
+                        dateObj = new Date(timestamp.seconds * 1000); 
+                        validTimestamp = true;
+                    } 
+                    else if (typeof timestamp === 'string' && (timestamp.endsWith('Z') || timestamp.includes('T'))) {
+                        dateObj = new Date(timestamp); 
+                        if (!isNaN(dateObj.getTime())) {
+                            validTimestamp = true;
+                        }
+                    }
+
+                    if (validTimestamp) {
+                        // Format: DD/MM/YYYY HH:MM (Thai time zone)
+                        timeLabel = dateObj.toLocaleString('th-TH', { 
+                            day: '2-digit',      
+                            month: '2-digit', 
+                            year: 'numeric', 
+                            hour: '2-digit', 
+                            minute: '2-digit', 
+                            timeZone: 'Asia/Bangkok' 
+                        });
+                    } else {
+                        timeLabel = '⚠️ FORMAT ผิด';
+                    }
+                    // --- End Timestamp Parsing Logic ---
+
+                    const heartRate = data.heartRate || 0;
+                    const spo2 = data.spo2 || 0;
+                    
+                    latestRawData.push({ timeLabel, heartRate, spo2, timestamp: data.timestamp });
+                });
+                
+                // Data limits
+                const tableLimit = 10; 
+
+                // 1. REALTIME CHART UPDATE 
+                updateRealtimeChart(latestRawData);
+                
+                // 2. LATEST METRICS CARD & TABLE UPDATE
+                if (latestRawData.length > 0) {
+                    const lastIndex = latestRawData.length - 1;
+                    const latestData = latestRawData[lastIndex];
+                    
+                    // --- Latest Reading Bar ---
+                    latestReadingDiv.innerHTML = `
+                        <p class="text-xl font-bold text-gray-700">อัพเดทล่าสุดเมื่อ: <span class="text-indigo-600">${latestData.timeLabel}</span></p>
+                        <p class="text-2xl mt-2">
+                            ❤️ HR: <span class="font-extrabold ${latestData.heartRate > 100 ? 'text-red-500' : 'text-green-600'}">${latestData.heartRate}</span> bpm | 
+                            💨 SpO₂: <span class="font-extrabold ${latestData.spo2 < 90 ? 'text-red-500' : 'text-green-600'}">${latestData.spo2}</span> %
+                        </p>
+                    `;
+                    errorMessage.textContent = '';
+
+                    // --- Metric Cards Update (HR/SpO2 status logic) ---
+                    currentHr.textContent = latestData.heartRate;
+                    currentSpo2.textContent = latestData.spo2;
+                    
+                    // HR Status Logic
+                    let hr_msg = "ปกติ (Normal)";
+                    let hr_color = "text-green-600";
+                    if (latestData.heartRate < 60) {
+                        hr_msg = "หัวใจเต้นช้า (Bradycardia)";
+                        hr_color = "text-yellow-600";
+                    } else if (latestData.heartRate > 100) {
+                        hr_msg = "หัวใจเต้นเร็ว (Tachycardia)";
+                        hr_color = "text-red-600";
+                    }
+                    hrStatus.textContent = hr_msg;
+                    hrStatus.className = `text-sm font-semibold mt-2 ${hr_color}`;
+
+                    // SpO2 Status Logic
+                    let spo2_msg = "ปกติ (Normal)";
+                    let spo2_color = "text-green-600";
+                    if (latestData.spo2 < 95) {
+                        spo2_msg = "ออกซิเจนต่ำกว่าเกณฑ์ (Borderline)";
+                        spo2_color = "text-yellow-600";
+                    }
+                    if (latestData.spo2 < 90) {
+                        spo2_msg = "ออกซิเจนต่ำอันตราย (Hypoxemia)";
+                        spo2_color = "text-red-600";
+                    }
+                    spo2Status.textContent = spo2_msg;
+                    spo2Status.className = `text-sm font-semibold mt-2 ${spo2_color}`;
+                    
+                    // 2.1. SUMMARY TABLE UPDATE
+                    tableBody.innerHTML = ''; 
+                    const recentData = latestRawData.slice(-tableLimit).reverse(); 
+
+                    recentData.forEach(item => {
+                        const hrClass = item.heartRate > 100 || item.heartRate < 60 ? 'text-red-600 font-bold' : 'text-gray-900';
+                        const spo2Class = item.spo2 < 95 ? 'text-red-600 font-bold' : 'text-gray-900';
+                        const row = `
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.timeLabel}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm ${hrClass}">${item.heartRate}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm ${spo2Class}">${item.spo2}</td>
+                            </tr>
+                        `;
+                        tableBody.insertAdjacentHTML('beforeend', row);
+                    });
+
+                } else {
+                    latestReadingDiv.innerHTML = `<p class="text-xl font-medium text-red-500">ไม่พบข้อมูล! โปรดตรวจสอบว่าอุปกรณ์กำลังบันทึกข้อมูลไปที่ <span class="font-mono text-base text-red-700 bg-red-100 p-1 rounded-md mt-1 block">${COLLECTION_PATH}</span></p>`;
+                    tableBody.innerHTML = `<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">ไม่พบข้อมูลการบันทึก</td></tr>`;
+                    currentHr.textContent = '--';
+                    currentSpo2.textContent = '--';
+                }
+
+            }, (error) => {
+                displayError(`Firestore Error: ${error.message}. โปรดตรวจสอบ Firebase Config และ Security Rules`);
+                console.error('Firestore Error:', error);
+                if (unsubscribeSnapshot) unsubscribeSnapshot();
+            });
+        }
+        
+        // --- Main Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize the single chart instance
+            initializeChart('chart', 'line', '⏱️ เรียลไทม์ (20 จุดล่าสุด)');
+            
+            try {
+                // Initialize Firebase services
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                
+                // Start listening to the fixed device's data
+                startDataListener();
+
+                // Update path display explicitly
+                document.getElementById('path-display').textContent = COLLECTION_PATH;
+            } catch (e) {
+                displayError(`การเชื่อมต่อ Firebase ล้มเหลว: ${e.message}`);
+            }
+        });
+        
+    </script>
+</body>
+</html>
