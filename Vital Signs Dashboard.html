@@ -142,6 +142,17 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Heartbeat line animation */
+        .ecg-line {
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+            animation: ecg-flow 2s infinite linear;
+        }
+        @keyframes ecg-flow {
+            0% { stroke-dashoffset: 100; }
+            100% { stroke-dashoffset: -100; }
+        }
+
         /* PDF Export Styles - Classic Layout */
         #pdf-export-template {
             position: absolute;
@@ -248,8 +259,15 @@
 
     <!-- 1. Authentication Screen (Login/Register) -->
     <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4">
-        <div class="auth-card w-full max-w-md bg-white p-10 rounded-[2.5rem] shadow-2xl">
-            <div class="text-center mb-8">
+        <div class="auth-card w-full max-w-md bg-white p-10 rounded-[2.5rem] shadow-2xl relative">
+            <div class="text-center mb-8 relative">
+                <!-- Back Button for Registration Mode -->
+                <button id="auth-back-btn" onclick="toggleAuthMode()" class="hidden absolute left-0 top-0 p-2 text-gray-400 hover:text-indigo-600 transition-all">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                </button>
+
                 <div class="bg-blue-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-200">
                     <svg class="w-10 h-10" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M32 56s-20-12.5-26-24C1.5 22 6 10 18 10c6 0 10 4 14 8 4-4 8-8 14-8 12 0 16.5 12 12 22-6 11.5-26 24-26 24z" fill="white" />
@@ -554,7 +572,7 @@
 
         <div class="bottom-nav-container">
             <div class="covermenubot">
-                <div onclick="switchTab(1)" class="sub-botmenu"><svg id="nav-icon-1" class="icon-size text-gray-300 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
+                <div onclick="switchTab(1)" class="sub-botmenu"><svg id="nav-icon-1" class="icon-size text-gray-300 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
                 <div onclick="switchTab(2)" class="sub-botmenu"><div id="nav-icon-center" class="h-14 w-14 rounded-2xl bg-indigo-600 flex items-center justify-center -mt-8 shadow-xl text-white transition-all transform hover:scale-110"><svg class="h-8 w-8" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div></div>
                 <div onclick="switchTab(3)" class="sub-botmenu"><svg id="nav-icon-3" class="icon-size text-gray-300 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3h-2V1h-2v2H9V1H7v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zm-5-8H9c-.55 0-1 .45-1 1s.45 1 1 1h5c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>
             </div>
@@ -622,6 +640,7 @@
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, reauthenticateWithCredential, EmailAuthProvider, updatePassword, deleteUser, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore.js";
 
+        // Firebase config - placeholder as provided
         const firebaseConfig = { apiKey: "AIzaSyDzTkR7xbg9B6UkknvRXiuamWsBR1zIQ90", authDomain: "hrspo-98b0c.firebaseapp.com", projectId: "hrspo-98b0c", storageBucket: "hrspo-98b0c.appspot.com", messagingSenderId: "364239224326", appId: "1:364239224326:web:1e66faddd8e6dd2e718d87" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -715,7 +734,7 @@
             catch (e) { showPopup("ล้มเหลว", "บันทึกข้อมูลไม่ได้", true); } finally { $('#btn-save-profile').prop('disabled', false).text('บันทึก'); }
         };
 
-        // --- ระบบรักษาความปลอดภัยบัญชี ---
+        // Account Security
         window.openChangePassword = () => { $('#change-password-overlay').removeClass('hidden'); setTimeout(() => $('#change-password-modal').removeClass('popup-out').addClass('popup-in'), 10); };
         window.closeChangePassword = () => { $('#change-password-modal').removeClass('popup-in').addClass('popup-out'); setTimeout(() => $('#change-password-overlay').addClass('hidden'), 300); $('#old-password, #new-password, #confirm-new-password').val(''); };
         window.openDeleteAccount = () => { $('#delete-account-overlay').removeClass('hidden'); setTimeout(() => $('#delete-account-modal').removeClass('popup-out').addClass('popup-in'), 10); };
@@ -761,7 +780,7 @@
             }
         };
 
-        // --- ระบบลืมรหัสผ่าน (หน้าแยก) ---
+        // Forgot Password
         window.goToForgotPw = () => {
             $('#auth-screen').fadeOut(200, () => {
                 $('#forgot-pw-screen').fadeIn(200).addClass('fade-in');
@@ -783,7 +802,7 @@
             $('#forgot-submit-btn').prop('disabled', true).text('กำลังส่งคำขอ...');
             try {
                 await sendPasswordResetEmail(auth, email);
-                showPopup("ส่งสำเร็จ", `ระบบได้ส่งลิงก์ตั้งรหัสผ่านใหม่ไปยัง ${email} แล้ว โปรดตรวจสอบอีเมลของคุณ`);
+                showPopup("ส่งสำเร็จ", `ระบบได้ส่งลิงก์ตั้งรหัสผ่านใหม่ไปยัง ${email} แล้ว โปรดตรวจสอบอีเมลของคุณ (หากไม่พบอีเมลในกล่องขาเข้า กรุณาตรวจสอบในโฟลเดอร์จดหมายขยะ)`);
                 backToLogin();
             } catch (err) {
                 showForgotErr("ไม่พบอีเมลนี้ในระบบ หรือเกิดข้อผิดพลาดในการส่ง");
@@ -793,7 +812,6 @@
         };
 
         function showForgotErr(m) { $('#forgot-error-msg').text(m).removeClass('hidden'); }
-        // ---------------------------------------------
 
         onAuthStateChanged(auth, async user => {
             if (user) { 
@@ -838,15 +856,55 @@
             $('#register-only-fields, #register-confirm-field').toggleClass('hidden', !isRegisterMode); 
             $('#auth-toggle-btn').toggleClass('hidden', isRegisterMode); 
             $('#forgot-password-link').toggleClass('hidden', isRegisterMode);
+            // Show/Hide back button
+            $('#auth-back-btn').toggleClass('hidden', !isRegisterMode);
+            // Hide error message when switching modes
+            $('#error-msg').addClass('hidden');
+            // Update placeholder based on mode
+            $('#email').attr('placeholder', isRegisterMode ? 'อีเมล (ระบุอีเมลที่ติดต่อได้จริง)' : 'อีเมล');
+        };
+
+        // Function to validate email format using Regex
+        const validateEmailFormat = (email) => {
+            return String(email)
+                .toLowerCase()
+                .match(
+                    /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+                );
         };
         
         window.handleAuthSubmit = async () => {
             const e = $('#email').val().trim(), p = $('#password').val(), cp = $('#confirm-password').val(), fName = $('#firstName').val().trim(), lName = $('#lastName').val().trim(), bDate = $('#birthDate').val();
+            
             if (!e || !p) return showErr("กรุณากรอกข้อมูลให้ครบถ้วน");
+
+            // Check if email format is valid
+            if (!validateEmailFormat(e)) {
+                return showErr("รูปแบบอีเมลไม่ถูกต้อง กรุณาใช้อีเมลที่มีอยู่จริงเท่านั้น (เช่น example@mail.com)");
+            }
+
             try {
-                if (isRegisterMode) { if (!fName || ! lName || !bDate) return showErr("กรุณากรอกข้อมูลให้ครบถ้วน"); if (p !== cp) return showErr("รหัสผ่านไม่ตรงกัน"); const uc = await createUserWithEmailAndPassword(auth, e, p); await setDoc(doc(db, "users_profiles", uc.user.uid), { firstName: fName, lastName: lName, birthDate: bDate, email: e, pairedDeviceId: "" }); }
+                if (isRegisterMode) { 
+                    if (!fName || ! lName || !bDate) return showErr("กรุณากรอกข้อมูลให้ครบถ้วน"); 
+                    if (p !== cp) return showErr("รหัสผ่านไม่ตรงกัน"); 
+                    const uc = await createUserWithEmailAndPassword(auth, e, p); 
+                    await setDoc(doc(db, "users_profiles", uc.user.uid), { firstName: fName, lastName: lName, birthDate: bDate, email: e, pairedDeviceId: "" }); 
+                    
+                    // Requirement: Show success popup and redirect back to login
+                    showPopup("ลงทะเบียนสำเร็จ", "บัญชีของคุณถูกสร้างเรียบร้อยแล้ว กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่านของคุณ");
+                    await signOut(auth); // Prevent auto-login by Firebase
+                    if (isRegisterMode) toggleAuthMode(); // Reset view to login mode
+                    // Clear inputs
+                    $('#email, #password, #confirm-password, #firstName, #lastName, #birthDate').val('');
+                }
                 else await signInWithEmailAndPassword(auth, e, p);
-            } catch(err) { showErr("อีเมลหรือรหัสผ่านไม่ถูกต้อง"); }
+            } catch(err) { 
+                if (isRegisterMode) {
+                    showErr("อีเมลนี้อาจถูกใช้งานไปแล้ว หรือข้อมูลไม่ถูกต้อง"); 
+                } else {
+                    showErr("อีเมลหรือรหัสผ่านไม่ถูกต้อง"); 
+                }
+            }
         };
         
         function showErr(m) { $('#error-msg').text(m).removeClass('hidden'); }
