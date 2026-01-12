@@ -306,20 +306,20 @@
                 <div id="history-page" class="covertotalbooking page-content-scroll">
                     <div class="content-wrapper">
                         <div class="bg-white p-5 pt-8 rounded-t-[2.5rem] rounded-b-none shadow-2xl border-x border-t border-gray-100 flex-1 flex flex-col relative min-h-full pb-[100px]">
-                            <!-- Control Header - Fixed overflow issue by adjusting sizes -->
-                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5 pb-5 border-b border-gray-50 items-end text-center">
-                                <div class="flex flex-col text-left">
+                            <!-- Control Header - Balanced dimensions for inputs and buttons -->
+                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-5 pb-5 border-b border-gray-50 items-end text-center">
+                                <div class="flex flex-col text-left min-w-0">
                                     <label class="text-[9px] font-black text-gray-400 block mb-1 uppercase tracking-widest ml-2">เลือกวัน</label>
-                                    <input type="date" id="date-picker" class="picker-input font-bold text-gray-700 shadow-sm w-full h-[40px] text-[10px] transition-all focus:ring-2 focus:ring-indigo-100">
+                                    <input type="date" id="date-picker" class="picker-input font-bold transition-all focus:ring-2 focus:ring-indigo-100 shadow-sm">
                                 </div>
-                                <div class="flex flex-col text-left">
+                                <div class="flex flex-col text-left min-w-0">
                                     <label class="text-[9px] font-black text-gray-400 block mb-1 uppercase tracking-widest ml-2">เลือกเดือน</label>
-                                    <input type="month" id="month-picker" class="picker-input font-bold text-gray-700 shadow-sm w-full h-[40px] text-[10px] transition-all focus:ring-2 focus:ring-indigo-100">
+                                    <input type="month" id="month-picker" class="picker-input font-bold transition-all focus:ring-2 focus:ring-indigo-100 shadow-sm">
                                 </div>
-                                <button onclick="resetToAll()" class="bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 shadow-sm hover:bg-indigo-600 hover:text-white transition-all text-[10px] font-black uppercase active:scale-95 h-[40px]">
+                                <button onclick="resetToAll()" class="bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 shadow-sm hover:bg-indigo-600 hover:text-white transition-all text-[10px] font-black uppercase active:scale-95 h-[40px] w-full">
                                     แสดงทั้งหมด
                                 </button>
-                                <button id="btn-main-report" onclick="downloadPDF()" class="bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 shadow-sm hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-1 text-[10px] font-black uppercase active:scale-95 h-[40px]">
+                                <button id="btn-main-report" onclick="downloadPDF()" class="bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 shadow-sm hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-1 text-[10px] font-black uppercase active:scale-95 h-[40px] w-full">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                     </svg>
