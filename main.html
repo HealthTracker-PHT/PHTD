@@ -109,7 +109,7 @@
         </div>
     </div>
 
-    <!-- 1.1 Forgot Password Screen (ปรับให้แสดงกึ่งกลางหน้าจอเสมอ) -->
+    <!-- 1.1 Forgot Password Screen -->
     <div id="forgot-pw-screen" class="fixed inset-0 z-[60] bg-[#f3f4f6] hidden flex items-center justify-center p-4">
         <div class="auth-card w-full max-w-md bg-white p-10 rounded-[2.5rem] shadow-2xl">
             <div class="text-center mb-8">
@@ -306,15 +306,15 @@
                 <div id="history-page" class="covertotalbooking page-content-scroll">
                     <div class="content-wrapper">
                         <div class="bg-white p-5 pt-8 rounded-t-[2.5rem] rounded-b-none shadow-2xl border-x border-t border-gray-100 flex-1 flex flex-col relative min-h-full pb-[100px]">
-                            <!-- Control Header -->
+                            <!-- Control Header - Fixed overflow issue by adjusting sizes -->
                             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5 pb-5 border-b border-gray-50 items-end text-center">
                                 <div class="flex flex-col text-left">
                                     <label class="text-[9px] font-black text-gray-400 block mb-1 uppercase tracking-widest ml-2">เลือกวัน</label>
-                                    <input type="date" id="date-picker" class="picker-input font-bold text-gray-700 shadow-sm w-full h-[40px] text-xs transition-all focus:ring-2 focus:ring-indigo-100">
+                                    <input type="date" id="date-picker" class="picker-input font-bold text-gray-700 shadow-sm w-full h-[40px] text-[10px] transition-all focus:ring-2 focus:ring-indigo-100">
                                 </div>
                                 <div class="flex flex-col text-left">
                                     <label class="text-[9px] font-black text-gray-400 block mb-1 uppercase tracking-widest ml-2">เลือกเดือน</label>
-                                    <input type="month" id="month-picker" class="picker-input font-bold text-gray-700 shadow-sm w-full h-[40px] text-xs transition-all focus:ring-2 focus:ring-indigo-100">
+                                    <input type="month" id="month-picker" class="picker-input font-bold text-gray-700 shadow-sm w-full h-[40px] text-[10px] transition-all focus:ring-2 focus:ring-indigo-100">
                                 </div>
                                 <button onclick="resetToAll()" class="bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 shadow-sm hover:bg-indigo-600 hover:text-white transition-all text-[10px] font-black uppercase active:scale-95 h-[40px]">
                                     แสดงทั้งหมด
