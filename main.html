@@ -372,7 +372,7 @@
                                 <div id="data-table-container" class="overflow-x-auto rounded-lg border border-gray-50 mb-4">
                                     <table class="w-full text-center">
                                         <thead class="text-[9px] font-black text-gray-400 uppercase bg-gray-50/50">
-                                            <tr><th class="py-2">ครั้งที่</th><th>วัน/เวลา</th><th>HR</th><th>SpO₂</th></tr>
+                                            <tr><th class="py-2">ครั้งที่</th><th>วัน/เวลา</th><th>HR</th><th>SpO₂</th> <th class="w-10"></th></tr>
                                         </thead>
                                         <tbody id="data-table-body" class="divide-y divide-gray-50 text-[11px]"></tbody>
                                     </table>
@@ -439,6 +439,21 @@
                     <button onclick="closeDeleteAccount()" class="flex-1 py-4 bg-gray-100 text-gray-400 font-bold rounded-2xl active:scale-95 transition-all">ยกเลิก</button>
                     <button id="btn-confirm-delete-acc" onclick="handleDeleteAccount()" class="flex-1 py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg active:scale-95 transition-all">ยืนยันการลบ</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+     <!-- Delete Confirmation Modal (NEW) -->
+    <div id="delete-record-overlay" class="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center hidden backdrop-blur-sm">
+        <div id="delete-record-modal" class="bg-white p-8 rounded-[2.5rem] shadow-2xl w-[90%] max-md popup-out text-center">
+            <div class="w-16 h-16 bg-red-100 rounded-3xl flex items-center justify-center mx-auto mb-4 text-red-500">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </div>
+            <h3 class="text-xl font-black text-gray-800 mb-2">ยืนยันการลบข้อมูล?</h3>
+            <p id="delete-record-info" class="text-gray-500 mb-6 font-medium text-xs leading-relaxed px-4 text-center">รายการที่บันทึกไว้นี้จะถูกลบออกจากระบบถาวร</p>
+            <div class="flex gap-4">
+                <button onclick="closeDeleteRecord()" class="flex-1 py-4 bg-gray-100 text-gray-400 font-bold rounded-2xl active:scale-95 transition-all">ยกเลิก</button>
+                <button id="btn-execute-delete" class="flex-1 py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg active:scale-95 transition-all">ยืนยันลบ</button>
             </div>
         </div>
     </div>
@@ -650,6 +665,29 @@
             $('#delete-account-modal').removeClass('popup-in').addClass('popup-out'); 
             setTimeout(() => $('#delete-account-overlay').addClass('hidden'), 300); 
             $('#del-confirm-password').val(''); 
+        };
+
+         // Functions for deleting records 
+        window.confirmDeleteRecord = (id, label) => {
+            $('#delete-record-info').html(`ยืนยันการลบรายการวันที่ <br><b>${label}</b> <br>ถาวรใช่หรือไม่?`);
+            $('#btn-execute-delete').attr('onclick', `executeDeleteRecord('${id}')`);
+            $('#delete-record-overlay').removeClass('hidden');
+            setTimeout(() => $('#delete-record-modal').removeClass('popup-out').addClass('popup-in'), 10);
+        };
+        window.closeDeleteRecord = () => { 
+            $('#delete-record-modal').removeClass('popup-in').addClass('popup-out'); 
+            setTimeout(() => $('#delete-record-overlay').addClass('hidden'), 300); };
+        window.executeDeleteRecord = async (recordId) => {
+            $('#btn-execute-delete').prop('disabled', true).text('ลบ...');
+            try {
+                await deleteDoc(doc(db, "users", currentUser.uid, "history", recordId));
+                closeDeleteRecord();
+                showPopup("สำเร็จ", "ลบรายการเรียบร้อยแล้ว");
+            } catch (e) {
+                showPopup("ผิดพลาด", "ไม่สามารถลบได้ โปรดลองอีกครั้ง", true);
+            } finally {
+                $('#btn-execute-delete').prop('disabled', false).text('ยืนยันลบ');
+            }
         };
 
         async function reauth(oldPass) {
@@ -865,10 +903,19 @@
         function listenHist() {
             const q = query(collection(db, "users", currentUser.uid, "history"), orderBy("timestamp", "asc"));
             unsubscribeHistory = onSnapshot(q, s => {
-                allHist = s.docs.map(doc => { const d = doc.data(); 
+               allHist = s.docs.map(doc => { 
+                    const d = doc.data(); 
                     const dt = d.timestamp?.seconds ? new Date(d.timestamp.seconds * 1000) : new Date(d.timestamp); 
-                    return { label: dt.toLocaleString('th-TH', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }), hr: d.heartRate, spo2: d.spo2, ts: dt.getTime() }; });
-                if (allHist.length > 0) $('#last-saved-display').text(allHist[allHist.length-1].label); 
+                    return { 
+                        id: doc.id, // เก็บไอดีเพื่อใช้ในการลบ
+                        label: dt.toLocaleString('th-TH', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }), 
+                        hr: d.heartRate, 
+                        spo2: d.spo2, 
+                        ts: dt.getTime() 
+                    }; 
+                }); 
+                 if (allHist.length > 0) 
+                 $('#last-saved-display').text(allHist[allHist.length-1].label); 
                 applyFilt(isFirstDataLoad); 
                 isFirstDataLoad = false;
             });
@@ -910,7 +957,18 @@
         }
         function renderTable() {
             const ti = filtHist.length; const si = (curPage - 1) * PAGE_SIZE; const pd = filtHist.slice(si, si + PAGE_SIZE);
-            $('#data-table-body').html(pd.length ? pd.map((i, idx) => `<tr><td class="py-4 text-gray-400 font-mono text-[10px] font-bold text-center">${si + idx + 1}</td><td class="font-bold text-xs text-center">${i.label}</td><td class="font-black text-gray-800 text-center">${i.hr}</td><td class="font-black text-indigo-600 text-center">${i.spo2}%</td></tr>`).join('') : '<tr><td colspan="4" class="py-10 text-gray-300 italic text-xs text-center font-bold">ไม่มีข้อมูล</td></tr>');
+            $('#data-table-body').html(pd.length ? pd.map((i, idx) => `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="py-4 text-gray-400 font-mono text-[10px] font-bold text-center">${si + idx + 1}</td>
+                    <td class="font-bold text-xs text-center">${i.label}</td>
+                    <td class="font-black text-gray-800 text-center">${i.hr}</td>
+                    <td class="font-black text-indigo-600 text-center">${i.spo2}%</td>
+                    <td class="pr-2 text-center">
+                        <button onclick="confirmDeleteRecord('${i.id}', '${i.label}')" class="p-1.5 text-red-300 hover:text-red-500 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </td>
+                </tr>`).join('') : '<tr><td colspan="5" class="py-10 text-gray-300 italic text-xs text-center font-bold">ไม่มีข้อมูล</td></tr>');
             $('#current-page-num').text(curPage); 
             $('#total-pages-num').text(Math.ceil(ti / PAGE_SIZE) || 1); 
             $('#prev-page').prop('disabled', curPage === 1); $('#next-page').prop('disabled', curPage === Math.ceil(ti / PAGE_SIZE));
