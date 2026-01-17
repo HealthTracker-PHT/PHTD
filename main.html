@@ -453,36 +453,76 @@
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, reauthenticateWithCredential, EmailAuthProvider, updatePassword, deleteUser, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore.js";
 
         // Firebase config
-        const firebaseConfig = { apiKey: "AIzaSyDzTkR7xbg9B6UkknvRXiuamWsBR1zIQ90", authDomain: "hrspo-98b0c.firebaseapp.com", projectId: "hrspo-98b0c", storageBucket: "hrspo-98b0c.appspot.com", messagingSenderId: "364239224326", appId: "1:364239224326:web:1e66faddd8e6dd2e718d87" };
-        const app = initializeApp(firebaseConfig);
+        //const firebaseConfig = { apiKey: "AIzaSyDzTkR7xbg9B6UkknvRXiuamWsBR1zIQ90", authDomain: "hrspo-98b0c.firebaseapp.com", projectId: "hrspo-98b0c", storageBucket: "hrspo-98b0c.appspot.com", messagingSenderId: "364239224326", appId: "1:364239224326:web:1e66faddd8e6dd2e718d87" };
+        const app = initializeApp(window.firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let currentUser = null, pairedDeviceId = null, chartInstance = null, unsubscribeDevice = null, unsubscribeHistory = null, isRecording = false, lastTs = 0, allHist = [], filtHist = [], curPage = 1, curMetric = 'both', isRegisterMode = false, profileDataCache = null, isFirstDataLoad = true;
+        let currentUser = null, 
+        pairedDeviceId = null, 
+        chartInstance = null, 
+        unsubscribeDevice = null, 
+        unsubscribeHistory = null, 
+        isRecording = false, 
+        lastTs = 0, 
+        allHist = [], 
+        filtHist = [], 
+        curPage = 1, 
+        curMetric = 'both', 
+        isRegisterMode = false, 
+        profileDataCache = null, 
+        isFirstDataLoad = true;
         const PAGE_SIZE = 10;
-        let selectedFilter = "", filtMode = "all", chartRaw = [];
+        let selectedFilter = "", 
+        filtMode = "all", 
+        chartRaw = [];
 
-        function calculateAge(birthDateString) { if (!birthDateString) return "--"; const today = new Date(); const birthDate = new Date(birthDateString); let age = today.getFullYear() - birthDate.getFullYear(); const m = today.getMonth() - birthDate.getMonth(); if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--; return age; }
+        function calculateAge(birthDateString) 
+        { if (!birthDateString) return "--"; 
+        const today = new Date(); 
+        const birthDate = new Date(birthDateString); 
+        let age = today.getFullYear() - birthDate.getFullYear(); 
+        const m = today.getMonth() - birthDate.getMonth(); 
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+         return age; 
+        }
 
         window.showPopup = (title, message, isError = false) => {
-            const container = $('#popup-icon-container'); const svg = $('#popup-svg'); const btn = $('#popup-confirm-btn');
-            $('#popup-title').text(title); $('#popup-message').text(message);
-            if (isError) { container.removeClass('bg-green-100').addClass('bg-red-50'); svg.removeClass('text-green-600').addClass('text-red-500'); svg.html('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>'); btn.removeClass('bg-indigo-600').addClass('bg-red-600'); }
-            else { container.removeClass('bg-red-100').addClass('bg-green-100'); svg.removeClass('text-red-500').addClass('text-green-600'); svg.html('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>'); btn.removeClass('bg-red-600').addClass('bg-indigo-600'); }
-            $('#popup-overlay').removeClass('hidden'); setTimeout(() => $('#custom-popup').removeClass('popup-out').addClass('popup-in'), 10);
+            const container = $('#popup-icon-container'); 
+            const svg = $('#popup-svg'); 
+            const btn = $('#popup-confirm-btn');
+            $('#popup-title').text(title); 
+            $('#popup-message').text(message);
+            if (isError) { 
+                container.removeClass('bg-green-100').addClass('bg-red-50'); 
+            svg.removeClass('text-green-600').addClass('text-red-500'); 
+            svg.html('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>'); 
+            btn.removeClass('bg-indigo-600').addClass('bg-red-600'); 
+         }else { 
+            container.removeClass('bg-red-100').addClass('bg-green-100'); 
+            svg.removeClass('text-red-500').addClass('text-green-600'); 
+            svg.html('<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>'); 
+            btn.removeClass('bg-red-600').addClass('bg-indigo-600');
+         }
+            $('#popup-overlay').removeClass('hidden'); 
+            setTimeout(() => $('#custom-popup').removeClass('popup-out').addClass('popup-in'), 10);
         };
-        window.closePopup = () => { $('#custom-popup').removeClass('popup-in').addClass('popup-out'); setTimeout(() => $('#popup-overlay').addClass('hidden'), 300); };
+        window.closePopup = () => { $('#custom-popup').removeClass('popup-in').addClass('popup-out'); 
+        setTimeout(() => $('#popup-overlay').addClass('hidden'), 300); };
 
         window.handleImageUpload = (event) => {
             const file = event.target.files[0];
             if (!file) return;
-            if (file.size > 800000) { showPopup("รูปใหญ่เกินไป", "กรุณาเลือกรูปที่มีขนาดไม่เกิน 800KB", true); return; }
+            if (file.size > 800000) { 
+                showPopup("รูปใหญ่เกินไป", "กรุณาเลือกรูปที่มีขนาดไม่เกิน 800KB", true); return; 
+            }
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const base64 = e.target.result;
@@ -491,27 +531,46 @@
                 try {
                     await setDoc(doc(db, "users_profiles", currentUser.uid), { profileImage: base64 }, { merge: true });
                     showPopup("สำเร็จ!", "อัปเดตรูปโปรไฟล์เรียบร้อยแล้ว");
-                } catch (err) { showPopup("ล้มเหลว", "ไม่สามารถบันทึกรูปภาพได้", true); }
+                } catch (err) { 
+                    showPopup("ล้มเหลว", "ไม่สามารถบันทึกรูปภาพได้", true);
+                 }
             };
             reader.readAsDataURL(file);
         };
 
         window.downloadPDF = async () => {
-            const btnReport = $('#btn-main-report'); const originalBtnText = btnReport.html();
+            const btnReport = $('#btn-main-report'); 
+            const originalBtnText = btnReport.html();
             try {
                 const targetData = (filtMode === 'all') ? [...allHist] : [...filtHist]; 
-                if (targetData.length === 0) { showPopup("ไม่พบข้อมูล", "กรุณาสร้างบันทึกข้อมูลก่อนสร้างรายงาน", true); return; }
+                if (targetData.length === 0) { 
+                    showPopup("ไม่พบข้อมูล", "กรุณาสร้างบันทึกข้อมูลก่อนสร้างรายงาน", true); 
+                    return; 
+                }
                 btnReport.prop('disabled', true).text('สร้าง...');
                 const jspdfLib = window.jspdf ? window.jspdf.jsPDF : null;
                 if (!jspdfLib || !window.html2canvas) throw new Error("ระบบสร้าง PDF กำลังโหลด");
-                const pdf = new jspdfLib('p', 'mm', 'a4'); const pdfWidth = pdf.internal.pageSize.getWidth();
-                $('#pdf-name').text($('#profile-display-name').text()); $('#pdf-age').text($('#profile-display-age').text().replace('อายุ: ', '').replace(' ปี', ''));
-                let rt = "ประวัติทั้งหมด"; if (filtMode === 'date') { const p = selectedFilter.split('-'); rt = `${p[2]}-${p[1]}-${p[0]}`; }
-                else if (filtMode === 'month') { const p = selectedFilter.split('-'); rt = `${p[1]}-${p[0]}`; }
-                $('#pdf-report-type').text(rt); $('#pdf-gen-time').text(new Date().toLocaleString('th-TH'));
+                const pdf = new jspdfLib('p', 'mm', 'a4'); 
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                $('#pdf-name').text($('#profile-display-name').text()); 
+                $('#pdf-age').text($('#profile-display-age').text().replace('อายุ: ', '').replace(' ปี', ''));
+                let rt = "ประวัติทั้งหมด"; 
+                if (filtMode === 'date') { 
+                    const p = selectedFilter.split('-'); 
+                    rt = `${p[2]}-${p[1]}-${p[0]}`; 
+                }
+                else if (filtMode === 'month') { 
+                    const p = selectedFilter.split('-'); 
+                    rt = `${p[1]}-${p[0]}`; 
+                }
+                $('#pdf-report-type').text(rt); 
+                $('#pdf-gen-time').text(new Date().toLocaleString('th-TH'));
                 
-                const originalMetricState = curMetric; chartInstance.setDatasetVisibility(0, true); chartInstance.setDatasetVisibility(1, true); chartInstance.update('none'); 
-                await new Promise(r => setTimeout(r, 250)); const chartCanvas = document.getElementById('chart');
+                const originalMetricState = curMetric; chartInstance.setDatasetVisibility(0, true); 
+                chartInstance.setDatasetVisibility(1, true); 
+                chartInstance.update('none'); 
+                await new Promise(r => setTimeout(r, 250)); 
+                const chartCanvas = document.getElementById('chart');
                 if (chartCanvas) $('#pdf-chart-img').attr('src', chartCanvas.toDataURL("image/png"));
 
                 const ROWS_FIRST_PAGE = 10, ROWS_SUB_PAGES = 18; 
@@ -519,8 +578,13 @@
 
                 for (let p = 0; p < totalPages; p++) {
                     if (p > 0) pdf.addPage();
-                    if (p === 0) { $('#pdf-chart-section').show(); $('#pdf-table-title').text("รายการบันทึกข้อมูลสุขภาพ"); }
-                    else { $('#pdf-chart-section').hide(); $('#pdf-table-title').text("รายการบันทึกข้อมูลสุขภาพ (ต่อ)"); }
+                    if (p === 0) { 
+                        $('#pdf-chart-section').show(); 
+                        $('#pdf-table-title').text("รายการบันทึกข้อมูลสุขภาพ"); 
+                    }else { 
+                        $('#pdf-chart-section').hide(); 
+                        $('#pdf-table-title').text("รายการบันทึกข้อมูลสุขภาพ (ต่อ)"); 
+                    }
                     const start = p === 0 ? 0 : ROWS_FIRST_PAGE + (p - 1) * ROWS_SUB_PAGES;
                     const count = (p === 0 ? ROWS_FIRST_PAGE : ROWS_SUB_PAGES);
                     const pageData = targetData.slice(start, start + count);
@@ -531,24 +595,62 @@
                     const canvas = await html2canvas(element, { scale: 2, backgroundColor: "#ffffff" });
                     pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, (canvas.height * pdfWidth) / canvas.width, undefined, 'FAST');
                 }
-                pdf.save(`HealthReport_${rt.replace(/-/g, '_')}.pdf`); $('#pdf-chart-img').attr('src', ''); curMetric = originalMetricState; updateChart(); showPopup("สำเร็จ", "รายงานถูกสร้างเรียบร้อยแล้ว");
-            } catch (err) { showPopup("ผิดพลาด", err.message, true); } finally { btnReport.prop('disabled', false).html(originalBtnText); }
+                pdf.save(`HealthReport_${rt.replace(/-/g, '_')}.pdf`); 
+                $('#pdf-chart-img').attr('src', ''); 
+                curMetric = originalMetricState; 
+                updateChart(); 
+                showPopup("สำเร็จ", "รายงานถูกสร้างเรียบร้อยแล้ว");
+            } catch (err) { 
+                showPopup("ผิดพลาด", err.message, true); 
+            } finally {
+                 btnReport.prop('disabled', false).html(originalBtnText); 
+                }
         };
 
-        window.openEditProfile = () => { if (!profileDataCache) return; $('#edit-firstName').val(profileDataCache.firstName || ''); $('#edit-lastName').val(profileDataCache.lastName || ''); $('#edit-birthDate').val(profileDataCache.birthDate || ''); $('#edit-profile-overlay').removeClass('hidden'); setTimeout(() => $('#edit-profile-modal').removeClass('popup-out').addClass('popup-in'), 10); };
-        window.closeEditProfile = () => { $('#edit-profile-modal').removeClass('popup-in').addClass('popup-out'); setTimeout(() => $('#edit-profile-overlay').addClass('hidden'), 300); };
+        window.openEditProfile = () => { 
+        if (!profileDataCache) return; 
+            $('#edit-firstName').val(profileDataCache.firstName || ''); 
+            $('#edit-lastName').val(profileDataCache.lastName || ''); 
+            $('#edit-birthDate').val(profileDataCache.birthDate || '');
+            $('#edit-profile-overlay').removeClass('hidden'); setTimeout(() => $('#edit-profile-modal').removeClass('popup-out').addClass('popup-in'), 10); };
+        window.closeEditProfile = () => { 
+            $('#edit-profile-modal').removeClass('popup-in').addClass('popup-out'); 
+            setTimeout(() => $('#edit-profile-overlay').addClass('hidden'), 300); 
+        };
         window.handleSaveProfile = async () => {
             const fName = $('#edit-firstName').val().trim(), lName = $('#edit-lastName').val().trim(), bDate = $('#edit-birthDate').val();
             if (!fName || !lName || !bDate) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
-            $('#btn-save-profile').prop('disabled', true).text('บันทึก...');
-            try { await setDoc(doc(db, "users_profiles", currentUser.uid), { firstName: fName, lastName: lName, birthDate: bDate }, { merge: true }); await loadProf(); closeEditProfile(); showPopup("สำเร็จ!", "แก้ไขข้อมูลส่วนตัวเรียบร้อยแล้ว"); }
-            catch (e) { showPopup("ล้มเหลว", "บันทึกข้อมูลไม่ได้", true); } finally { $('#btn-save-profile').prop('disabled', false).text('บันทึก'); }
+                $('#btn-save-profile').prop('disabled', true).text('บันทึก...');
+            try { await setDoc(doc(db, "users_profiles", currentUser.uid),{ firstName: fName, lastName: lName, birthDate: bDate }, { merge: true }); 
+            await loadProf(); 
+            closeEditProfile(); 
+            showPopup("สำเร็จ!", "แก้ไขข้อมูลส่วนตัวเรียบร้อยแล้ว"); 
+        }
+            catch (e) { 
+                showPopup("ล้มเหลว", "บันทึกข้อมูลไม่ได้", true); 
+            } finally { 
+                $('#btn-save-profile').prop('disabled', false).text('บันทึก'); 
+            }
         };
 
-        window.openChangePassword = () => { $('#change-password-overlay').removeClass('hidden'); setTimeout(() => $('#change-password-modal').removeClass('popup-out').addClass('popup-in'), 10); };
-        window.closeChangePassword = () => { $('#change-password-modal').removeClass('popup-in').addClass('popup-out'); setTimeout(() => $('#change-password-overlay').addClass('hidden'), 300); $('#old-password, #new-password, #confirm-new-password').val(''); };
-        window.openDeleteAccount = () => { $('#delete-account-overlay').removeClass('hidden'); setTimeout(() => $('#delete-account-modal').removeClass('popup-out').addClass('popup-in'), 10); };
-        window.closeDeleteAccount = () => { $('#delete-account-modal').removeClass('popup-in').addClass('popup-out'); setTimeout(() => $('#delete-account-overlay').addClass('hidden'), 300); $('#del-confirm-password').val(''); };
+        window.openChangePassword = () => { 
+            $('#change-password-overlay').removeClass('hidden'); 
+            setTimeout(() => $('#change-password-modal').removeClass('popup-out').addClass('popup-in'), 10); 
+    };
+        window.closeChangePassword = () => { 
+            $('#change-password-modal').removeClass('popup-in').addClass('popup-out'); 
+            setTimeout(() => $('#change-password-overlay').addClass('hidden'), 300); 
+            $('#old-password, #new-password, #confirm-new-password').val(''); 
+        };
+        window.openDeleteAccount = () => { 
+            $('#delete-account-overlay').removeClass('hidden'); 
+            setTimeout(() => $('#delete-account-modal').removeClass('popup-out').addClass('popup-in'), 10); 
+        };
+        window.closeDeleteAccount = () => { 
+            $('#delete-account-modal').removeClass('popup-in').addClass('popup-out'); 
+            setTimeout(() => $('#delete-account-overlay').addClass('hidden'), 300); 
+            $('#del-confirm-password').val(''); 
+        };
 
         async function reauth(oldPass) {
             const credential = EmailAuthProvider.credential(currentUser.email, oldPass);
@@ -561,16 +663,32 @@
             if (np !== cnp) return showPopup("ผิดพลาด", "รหัสผ่านใหม่ไม่ตรงกัน", true);
             if (np.length < 6) return showPopup("ผิดพลาด", "รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร", true);
             $('#btn-confirm-change-pw').prop('disabled', true).text('กำลังดำเนินการ...');
-            try { await reauth(op); await updatePassword(currentUser, np); closeChangePassword(); showPopup("สำเร็จ!", "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว"); }
-            catch (e) { showPopup("ล้มเหลว", "รหัสผ่านเดิมไม่ถูกต้อง", true); } finally { $('#btn-confirm-change-pw').prop('disabled', false).text('ตกลง'); }
+            try { await reauth(op); 
+                await updatePassword(currentUser, np); 
+                closeChangePassword(); 
+                showPopup("สำเร็จ!", "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว"); 
+            }
+            catch (e) { 
+                showPopup("ล้มเหลว", "รหัสผ่านเดิมไม่ถูกต้อง", true); 
+            } finally { 
+                $('#btn-confirm-change-pw').prop('disabled', false).text('ตกลง'); 
+            }
         };
 
         window.handleDeleteAccount = async () => {
             const pass = $('#del-confirm-password').val();
             if (!pass) return showPopup("ผิดพลาด", "กรุณากรอกรหัสผ่านเพื่อยืนยัน", true);
             $('#btn-confirm-delete-acc').prop('disabled', true).text('กำลังลบ...');
-            try { await reauth(pass); await deleteDoc(doc(db, "users_profiles", currentUser.uid)); await deleteUser(currentUser); closeDeleteAccount(); showPopup("ลบบัญชีสำเร็จ", "บัญชีถูกลบเรียบร้อยแล้ว"); }
-            catch (e) { showPopup("ล้มเหลว", "รหัสผ่านไม่ถูกต้อง", true); } finally { $('#btn-confirm-delete-acc').prop('disabled', false).text('ยืนยันการลบ'); }
+            try { await reauth(pass); 
+                await deleteDoc(doc(db, "users_profiles", currentUser.uid)); 
+                await deleteUser(currentUser); closeDeleteAccount(); 
+                showPopup("ลบบัญชีสำเร็จ", "บัญชีถูกลบเรียบร้อยแล้ว"); 
+            }
+            catch (e) { 
+                showPopup("ล้มเหลว", "รหัสผ่านไม่ถูกต้อง", true); 
+            } finally {
+                 $('#btn-confirm-delete-acc').prop('disabled', false).text('ยืนยันการลบ'); 
+                }
         };
 
         // Navigation Handlers - ปรับปรุงเพื่อแก้ปัญหาหน้าขาว
@@ -594,10 +712,16 @@
                 await sendPasswordResetEmail(auth, email);
                 showPopup("ส่งสำเร็จ", `ลิงก์ตั้งรหัสผ่านใหม่ถูกส่งไปยัง ${email} แล้ว โปรดตรวจสอบอีเมลของคุณ`);
                 backToLogin();
-            } catch (err) { showForgotErr("ไม่พบอีเมลนี้ในระบบ หรือเกิดข้อผิดพลาด"); } finally { $('#forgot-submit-btn').prop('disabled', false).text('ส่งคำขอรีเซ็ตรหัสผ่าน'); }
+            } catch (err) { 
+                showForgotErr("ไม่พบอีเมลนี้ในระบบ หรือเกิดข้อผิดพลาด"); 
+            } finally { 
+                $('#forgot-submit-btn').prop('disabled', false).text('ส่งคำขอรีเซ็ตรหัสผ่าน'); 
+            }
         };
 
-        function showForgotErr(m) { $('#forgot-error-msg').text(m).removeClass('hidden'); }
+        function showForgotErr(m) {
+             $('#forgot-error-msg').text(m).removeClass('hidden'); 
+            }
 
         onAuthStateChanged(auth, async user => {
             if (user) { 
@@ -628,8 +752,13 @@
                     $('#profile-display-name').text(displayTitle); 
                     
                     $('#profile-display-age').text(`อายุ: ${calculateAge(data.birthDate)} ปี`);
-                    if (data.profileImage) { $('#profile-avatar').attr('src', data.profileImage).removeClass('hidden'); $('#profile-placeholder').addClass('hidden'); }
-                    else { $('#profile-avatar').addClass('hidden'); $('#profile-placeholder').removeClass('hidden'); }
+                    if (data.profileImage) { 
+                        $('#profile-avatar').attr('src', data.profileImage).removeClass('hidden'); 
+                        $('#profile-placeholder').addClass('hidden'); 
+                    }
+                    else { $('#profile-avatar').addClass('hidden'); 
+                    $('#profile-placeholder').removeClass('hidden'); 
+                }
                 }
             } catch(e) {}
         }
@@ -664,35 +793,71 @@
                 
                 try {
                     const uc = await createUserWithEmailAndPassword(auth, email, pass); 
-                    await setDoc(doc(db, "users_profiles", uc.user.uid), { firstName: fName, lastName: lName, birthDate: bDate, email: email, pairedDeviceId: "" }); 
+                    await setDoc(doc(db, "users_profiles", uc.user.uid), 
+                    { firstName: fName, lastName: lName, birthDate: bDate, email: email, pairedDeviceId: "" }); 
                     showPopup("ลงทะเบียนสำเร็จ", "กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่านของคุณ");
                     await signOut(auth); 
                     toggleAuthMode();
-                } catch(err) { showErr("อีเมลถูกใช้งานแล้ว หรือข้อมูลไม่ถูกต้อง"); }
+                } catch(err) { 
+                    showErr("อีเมลถูกใช้งานแล้ว หรือข้อมูลไม่ถูกต้อง"); 
+                }
             } else {
                 email = $('#login-email').val().trim();
                 pass = $('#login-password').val();
                 if (!email || !pass) return showErr("กรุณากรอกข้อมูลให้ครบถ้วน");
                 try {
                     await signInWithEmailAndPassword(auth, email, pass);
-                } catch(err) { showErr("อีเมลหรือรหัสผ่านไม่ถูกต้อง"); }
+                } catch(err) { 
+                    showErr("อีเมลหรือรหัสผ่านไม่ถูกต้อง"); 
+                }
             }
         };
         
-        function showErr(m) { $('#error-msg').text(m).removeClass('hidden'); }
-        window.saveDeviceId = async () => { const id = $('#device-id-input').val().trim(); if (!id) return; try { await setDoc(doc(db, "users_profiles", currentUser.uid), { pairedDeviceId: id }, { merge: true }); pairedDeviceId = id; showPopup("เชื่อมต่อสำเร็จ!", `อุปกรณ์เครื่อง ${id} พร้อมใช้งาน`); initDash(); } catch (e) { showPopup("ล้มเหลว", "ผูกเครื่องไม่ได้", true); } };
+        function showErr(m) { 
+            $('#error-msg').text(m).removeClass('hidden'); 
+        }
+        window.saveDeviceId = async () => { 
+            const id = $('#device-id-input').val().trim(); 
+            if (!id) return; 
+            try { 
+                await setDoc(doc(db, "users_profiles", currentUser.uid), { pairedDeviceId: id }, { merge: true }); 
+                pairedDeviceId = id; 
+                showPopup("เชื่อมต่อสำเร็จ!", `อุปกรณ์เครื่อง ${id} พร้อมใช้งาน`); 
+                initDash(); 
+            } catch (e) { 
+                showPopup("ล้มเหลว", "ผูกเครื่องไม่ได้", true); 
+            } 
+        };
+
         window.logout = () => signOut(auth);
 
-        function initDash() { initChart(); stopListeners(); if (pairedDeviceId) { listenDev(); listenHist(); } switchTab(2); }
-        function stopListeners() { if(unsubscribeDevice) unsubscribeDevice(); if(unsubscribeHistory) unsubscribeHistory(); }
+        function initDash() { 
+            initChart(); 
+            stopListeners(); 
+            if (pairedDeviceId) { 
+                listenDev(); 
+                listenHist(); 
+            } 
+            switchTab(2); 
+        }
+        function stopListeners() { 
+            if(unsubscribeDevice) unsubscribeDevice(); 
+            if(unsubscribeHistory) unsubscribeHistory();
+         }
         
         function listenDev() {
             let isFirstSnapshot = true; 
             const q = query(collection(db, "users", pairedDeviceId, "records"), orderBy("timestamp", "desc"), limit(1));
             unsubscribeDevice = onSnapshot(q, s => { 
-                if (s.empty) { resetRealtimeUI(); return; } 
+                if (s.empty) { 
+                    resetRealtimeUI(); 
+                    return; } 
                 const d = s.docs[0].data(); 
-                if (isFirstSnapshot) { isFirstSnapshot = false; resetRealtimeUI(); return; } 
+                if (isFirstSnapshot) { 
+                    isFirstSnapshot = false; 
+                    resetRealtimeUI(); 
+                    return; 
+                } 
                 updateRealUI(d); 
             });
         }
@@ -700,56 +865,147 @@
         function listenHist() {
             const q = query(collection(db, "users", currentUser.uid, "history"), orderBy("timestamp", "asc"));
             unsubscribeHistory = onSnapshot(q, s => {
-                allHist = s.docs.map(doc => { const d = doc.data(); const dt = d.timestamp?.seconds ? new Date(d.timestamp.seconds * 1000) : new Date(d.timestamp); return { label: dt.toLocaleString('th-TH', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }), hr: d.heartRate, spo2: d.spo2, ts: dt.getTime() }; });
+                allHist = s.docs.map(doc => { const d = doc.data(); 
+                    const dt = d.timestamp?.seconds ? new Date(d.timestamp.seconds * 1000) : new Date(d.timestamp); 
+                    return { label: dt.toLocaleString('th-TH', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }), hr: d.heartRate, spo2: d.spo2, ts: dt.getTime() }; });
                 if (allHist.length > 0) $('#last-saved-display').text(allHist[allHist.length-1].label); 
-                applyFilt(isFirstDataLoad); isFirstDataLoad = false;
+                applyFilt(isFirstDataLoad); 
+                isFirstDataLoad = false;
             });
         }
 
-        async function saveHist(d, ts) { await addDoc(collection(db, "users", currentUser.uid, "history"), { heartRate: d.heartRate, spo2: d.spo2, timestamp: ts }); }
+        async function saveHist(d, ts) { 
+            await addDoc(collection(db, "users", currentUser.uid, "history"), { heartRate: d.heartRate, spo2: d.spo2, timestamp: ts }); 
+        }
 
-        function resetRealtimeUI() { $('#current-hr, #current-spo2').text('--'); $('#hr-status, #spo2-status').text('Wait').attr('class', 'px-3 py-1 rounded-lg bg-white border border-gray-100 text-gray-400 font-bold text-[10px]'); }
+        function resetRealtimeUI() {
+             $('#current-hr, #current-spo2').text('--'); 
+             $('#hr-status, #spo2-status').text('Wait').attr('class', 'px-3 py-1 rounded-lg bg-white border border-gray-100 text-gray-400 font-bold text-[10px]'); 
+            }
         
         function updateRealUI(d) {
             const ts = d.timestamp?.seconds ? new Date(d.timestamp.seconds * 1000) : new Date(d.timestamp || Date.now());
             $('#current-hr').text(d.heartRate || '--'); $('#current-spo2').text(d.spo2 || '--'); const h = d.heartRate || 0, s = d.spo2 || 0;
             $('#hr-status').text(h > 100 ? 'High' : (h > 0 && h < 60 ? 'Low' : 'Normal')).attr('class', `px-3 py-1 rounded-lg bg-white border ${h>100||(h<60&&h>0)?'border-red-200 text-red-600':'border-green-100 text-green-500'} font-bold text-[10px]`);
             $('#spo2-status').text(s > 0 && s < 95 ? 'Low' : 'Normal').attr('class', `px-3 py-1 rounded-lg bg-white border ${s>0&&s < 95?'border-blue-200 text-blue-600':'border-green-100 text-green-500'} font-bold text-[10px]`);
-            if (isRecording && ts.getTime() !== lastTs) { lastTs = ts.getTime(); saveHist(d, ts); }
+            if (isRecording && ts.getTime() !== lastTs) {
+                 lastTs = ts.getTime(); saveHist(d, ts); 
+                }
         }
 
-        window.resetToAll = () => { $('#date-picker, #month-picker').val(""); filtMode = "all"; selectedFilter = ""; applyFilt(true); };
+        window.resetToAll = () => { 
+            $('#date-picker, #month-picker').val(""); 
+            filtMode = "all"; 
+            selectedFilter = ""; 
+            applyFilt(true); 
+        };
         function applyFilt(jumpToLatest = false) {
             if (filtMode === "all") filtHist = [...allHist];
             else filtHist = allHist.filter(i => { const d = new Date(i.ts); const val = filtMode === 'date' ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; return val === selectedFilter; });
-            const tp = Math.ceil(filtHist.length / PAGE_SIZE) || 1; if (jumpToLatest) curPage = tp; else if (curPage > tp) curPage = tp; renderTable(); updateChart();
+            const tp = Math.ceil(filtHist.length / PAGE_SIZE) || 1; 
+            if (jumpToLatest) curPage = tp; 
+            else if (curPage > tp) curPage = tp; 
+            renderTable(); 
+            updateChart();
         }
         function renderTable() {
             const ti = filtHist.length; const si = (curPage - 1) * PAGE_SIZE; const pd = filtHist.slice(si, si + PAGE_SIZE);
             $('#data-table-body').html(pd.length ? pd.map((i, idx) => `<tr><td class="py-4 text-gray-400 font-mono text-[10px] font-bold text-center">${si + idx + 1}</td><td class="font-bold text-xs text-center">${i.label}</td><td class="font-black text-gray-800 text-center">${i.hr}</td><td class="font-black text-indigo-600 text-center">${i.spo2}%</td></tr>`).join('') : '<tr><td colspan="4" class="py-10 text-gray-300 italic text-xs text-center font-bold">ไม่มีข้อมูล</td></tr>');
-            $('#current-page-num').text(curPage); $('#total-pages-num').text(Math.ceil(ti / PAGE_SIZE) || 1); $('#prev-page').prop('disabled', curPage === 1); $('#next-page').prop('disabled', curPage === Math.ceil(ti / PAGE_SIZE));
+            $('#current-page-num').text(curPage); 
+            $('#total-pages-num').text(Math.ceil(ti / PAGE_SIZE) || 1); 
+            $('#prev-page').prop('disabled', curPage === 1); $('#next-page').prop('disabled', curPage === Math.ceil(ti / PAGE_SIZE));
         }
-        window.setMetricView = (v) => { curMetric = v; $('.metric-tab').removeClass('active'); $(`#tab-${v}`).addClass('active'); updateChart(); };
+        window.setMetricView = (v) => { 
+            curMetric = v; 
+            $('.metric-tab').removeClass('active'); 
+            $(`#tab-${v}`).addClass('active'); 
+            updateChart(); 
+        };
         function updateChart() {
-            if (!chartInstance) return; chartRaw = [...filtHist]; let dd = [...chartRaw]; if (dd.length > 200) { const s = Math.ceil(dd.length / 200); dd = dd.filter((_,i) => i % s === 0); }
-            chartInstance.data.labels = dd.map((_, i) => i + 1); chartInstance.data.datasets[0].data = dd.map(i => i.hr); chartInstance.data.datasets[1].data = dd.map(i => i.spo2);
-            chartInstance.setDatasetVisibility(0, curMetric === 'both' || curMetric === 'hr'); chartInstance.setDatasetVisibility(1, curMetric === 'both' || curMetric === 'spo2'); chartInstance.update();
+            if (!chartInstance) return; 
+            chartRaw = [...filtHist]; 
+            let dd = [...chartRaw]; 
+            if (dd.length > 200) { 
+                const s = Math.ceil(dd.length / 200); 
+                dd = dd.filter((_,i) => i % s === 0); 
+            }
+            chartInstance.data.labels = dd.map((_, i) => i + 1); chartInstance.data.datasets[0].data = dd.map(i => i.hr); 
+            chartInstance.data.datasets[1].data = dd.map(i => i.spo2);
+            chartInstance.setDatasetVisibility(0, curMetric === 'both' || curMetric === 'hr'); 
+            chartInstance.setDatasetVisibility(1, curMetric === 'both' || curMetric === 'spo2'); 
+            chartInstance.update();
         }
         function initChart() {
-            const ctx = document.getElementById('chart').getContext('2d'); if (chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [{ label: 'HR', borderColor: '#ef4444', data: [], tension: 0.35, fill: true, backgroundColor: 'rgba(239, 68, 68, 0.05)', borderWidth: 2, pointRadius: 1.5 }, { label: 'SpO2', borderColor: '#4f46e5', data: [], tension: 0.35, fill: true, backgroundColor: 'rgba(79, 70, 229, 0.05)', borderWidth: 2, pointRadius: 1.5 }] },
+            const ctx = document.getElementById('chart').getContext('2d'); 
+            if (chartInstance) 
+            chartInstance.destroy();
+            chartInstance = new Chart(ctx, { 
+                type: 'line', data: { 
+                    labels: [], 
+                    datasets: [{ 
+                        label: 'HR', 
+                        borderColor: '#ef4444', 
+                        data: [], tension: 0.35, 
+                        fill: true, 
+                        backgroundColor: 'rgba(239, 68, 68, 0.05)', 
+                        borderWidth: 2, pointRadius: 1.5 }, { 
+                            label: 'SpO2', 
+                            borderColor: '#4f46e5',
+                             data: [], tension: 0.35, 
+                             fill: true, 
+                             backgroundColor: 'rgba(79, 70, 229, 0.05)', 
+                             borderWidth: 2, 
+                             pointRadius: 1.5 
+                            }] 
+                            },
                 options: { 
                     responsive: true, maintainAspectRatio: false, 
-                    onClick: (e, elements) => { if (elements.length > 0) { const index = elements[0].index; const data = chartRaw[index]; const parts = data.label.split(' '); $('#detail-count').text('ครั้งที่ ' + (index + 1)); $('#detail-date').text(parts[0]); $('#detail-time').text(parts[1]); $('#detail-hr').text(data.hr); $('#detail-spo2').text(data.spo2 + '%'); $('#point-detail-box').show(); } },
+                    onClick: (e, elements) => { 
+                        if (elements.length > 0) { 
+                            const index = elements[0].index; 
+                            const data = chartRaw[index]; 
+                            const parts = data.label.split(' '); 
+                            $('#detail-count').text('ครั้งที่ ' + (index + 1)); 
+                            $('#detail-date').text(parts[0]); 
+                            $('#detail-time').text(parts[1]); $('#detail-hr').text(data.hr); 
+                            $('#detail-spo2').text(data.spo2 + '%'); 
+                            $('#point-detail-box').show(); 
+                        } 
+                    },
                     plugins: { legend: { display: false } }, 
-                    scales: { y: { min: 40, max: 120, grid: { color: '#f8fafc' } }, x: { grid: { display: false }, ticks: { font: { size: 9, weight: 'bold' } }, title: { display: true, text: 'ลำดับการวัด', font: { size: 10, weight: 'bold' } } } } 
+                    scales: { y: { min: 40, max: 120, grid: { color: '#f8fafc' } },
+                             x: { grid: { display: false }, ticks: { font: { size: 9, weight: 'bold' } }, title: { display: true, text: 'ลำดับการวัด', font: { size: 10, weight: 'bold' } } } } 
                 } 
             });
         }
-        document.getElementById('date-picker').onchange = (e) => { if (!e.target.value) return; filtMode = 'date'; selectedFilter = e.target.value; $('#month-picker').val(''); applyFilt(true); };
-        document.getElementById('month-picker').onchange = (e) => { if (!e.target.value) return; filtMode = 'month'; selectedFilter = e.target.value; $('#date-picker').val(''); applyFilt(true); };
-        $('#prev-page').click(() => { if (curPage > 1) { curPage--; renderTable(); } }); $('#next-page').click(() => { if (curPage < Math.ceil(filtHist.length / PAGE_SIZE)) { curPage++; renderTable(); } });
-        window.switchTab = (id) => { $('#mainpage333').removeClass('center00 left1 right2').addClass(id === 1 ? 'left1' : (id === 2 ? 'center00' : 'right2')); $('.icon-size').removeClass('text-indigo-600').addClass('text-gray-300'); $(`#nav-icon-${id}`).addClass('text-indigo-600'); if (id === 3) setTimeout(() => { chartInstance.update(); applyFilt(isFirstDataLoad); }, 150); };
+        document.getElementById('date-picker').onchange = (e) => { 
+            if (!e.target.value) return; 
+            filtMode = 'date'; 
+            selectedFilter = e.target.value; 
+            $('#month-picker').val(''); 
+            applyFilt(true); 
+        };
+        document.getElementById('month-picker').onchange = (e) => { 
+            if (!e.target.value) return; 
+            filtMode = 'month'; 
+            selectedFilter = e.target.value; 
+            $('#date-picker').val('');
+             applyFilt(true); };
+        $('#prev-page').click(() => { 
+            if (curPage > 1) { curPage--; renderTable(); } 
+        });
+        $('#next-page').click(() => { 
+            if (curPage < Math.ceil(filtHist.length / PAGE_SIZE)) { curPage++; renderTable(); } 
+        });
+        window.switchTab = (id) => { 
+            $('#mainpage333').removeClass('center00 left1 right2').addClass(id === 1 ? 'left1' : (id === 2 ? 'center00' : 'right2')); 
+            $('.icon-size').removeClass('text-indigo-600').addClass('text-gray-300'); 
+            $(`#nav-icon-${id}`).addClass('text-indigo-600'); 
+            if (id === 3) setTimeout(() => { 
+                chartInstance.update(); 
+                applyFilt(isFirstDataLoad); 
+            }, 150); 
+        };
         
         window.toggleRecording = async () => {
             if (!pairedDeviceId) return showPopup("ผิดพลาด", "กรุณาเชื่อมต่ออุปกรณ์ก่อน", true);
@@ -758,14 +1014,30 @@
                 try {
                     const snap = await getDoc(lockRef);
                     if (snap.exists() && snap.data().activeUserId && snap.data().activeUserId !== currentUser.uid) return showPopup("ไม่สามารถบันทึกได้", "อุปกรณ์นี้กำลังถูกใช้งานโดยผู้อื่น", true);
-                    await setDoc(lockRef, { activeUserId: currentUser.uid }); isRecording = true;
-                } catch (e) { return showPopup("ผิดพลาด", "โปรดลองอีกครั้ง", true); }
-            } else { try { await setDoc(lockRef, { activeUserId: null }); isRecording = false; } catch (e) { isRecording = false; } }
+                    await setDoc(lockRef, { activeUserId: currentUser.uid }); 
+                    isRecording = true;
+                } catch (e) { 
+                    return showPopup("ผิดพลาด", "โปรดลองอีกครั้ง", true); 
+                }
+            } else { 
+                try { 
+                    await setDoc(lockRef, { activeUserId: null }); isRecording = false; 
+                } catch (e) { 
+                    isRecording = false; 
+                } 
+            }
             updateRecUI();
         };
 
-        function updateRecUI() { $('#recording-bar').toggleClass('border-red-500 recording-pulse', isRecording); $('#btn-record').toggleClass('bg-red-500 text-white', isRecording).html(isRecording ? 'หยุดบันทึก' : 'เริ่มบันทึก'); $('#rec-title').text(isRecording ? 'กำลังบันทึกข้อมูล...' : 'โหมดดูอย่างเดียว'); $('#rec-dot').toggleClass('bg-red-200', isRecording).toggleClass('bg-gray-400', !isRecording); }
-        $(document).ready(() => { resetRealtimeUI(); });
+        function updateRecUI() { 
+            $('#recording-bar').toggleClass('border-red-500 recording-pulse', isRecording); 
+            $('#btn-record').toggleClass('bg-red-500 text-white', isRecording).html(isRecording ? 'หยุดบันทึก' : 'เริ่มบันทึก'); 
+            $('#rec-title').text(isRecording ? 'กำลังบันทึกข้อมูล...' : 'โหมดดูอย่างเดียว'); 
+            $('#rec-dot').toggleClass('bg-red-200', isRecording).toggleClass('bg-gray-400', !isRecording);
+         }
+        $(document).ready(() => { 
+            resetRealtimeUI();
+         });
     </script>
 </body>
 </html>
